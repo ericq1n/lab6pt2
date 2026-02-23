@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Button, Table, TableBody, TableCell, TableHead, TableRow, TextField, Box, Stack } from '@mui/material';
 
 export default function EmployeeMngmt() {
+    //instantiate local state for data access
     const [employees, setEmployees] = useState([]);
     const [formData, setFormData] = useState({
         first_name: '',
@@ -12,15 +13,28 @@ export default function EmployeeMngmt() {
         salary: ''
     });
     const [editingId, setEditingId] = useState(null);
+    const [fetchError, setFetchError] = useState(null);
+    const [loading, setLoading] = useState(true);
 
     //Fetch employees from the server
     const fetchEmployees = async () => {
+        setFetchError(null);
+        setLoading(true);
         try {
             const response = await fetch('http://localhost:5000/employees');
             const data = await response.json();
-            setEmployees(data);
+            if (!response.ok) {
+                setFetchError(data?.error || `Request failed (${response.status})`);
+                setEmployees([]);
+                return;
+            }
+            setEmployees(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error("Error fetching employees:", error);
+            setFetchError(error.message || 'Could not reach server. Is it running on port 5000?');
+            setEmployees([]);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -54,7 +68,7 @@ export default function EmployeeMngmt() {
             birthdate,
             salary: employee.salary ?? ''
         });
-        setEditingId(employee.id);
+        setEditingId(employee.employee_id);
     };
 
     const cancelEdit = () => {
@@ -95,6 +109,10 @@ export default function EmployeeMngmt() {
         <>
             <section>
                 <h2>Employee List</h2>
+                {fetchError && (
+                    <Box sx={{ color: 'error.main', mb: 2 }}>{fetchError}</Box>
+                )}
+                {loading && <Box sx={{ mb: 2 }}>Loading…</Box>}
                 <Table>
                     <TableHead>
                         <TableRow>
@@ -107,23 +125,21 @@ export default function EmployeeMngmt() {
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        <TableRow>
-                            {employees.map((employee) => (
-                            <TableRow key={employee.id}>
+                        {employees.map((employee) => (
+                            <TableRow key={employee.employee_id}>
                                 <TableCell>{employee.first_name}</TableCell>
                                 <TableCell>{employee.last_name}</TableCell>
                                 <TableCell>{employee.email}</TableCell>
                                 <TableCell>{employee.birthdate}</TableCell>
                                 <TableCell>{employee.salary}</TableCell>
                                 <TableCell>
-                                        <Button variant="outlined" sx={{ mr: 1 }} onClick={() => startEdit(employee)}>Edit</Button>
-                                        <Button variant="contained" color="error" onClick={() => deleteEmployee(employee.id)}>
-                                            Delete
-                                        </Button>
+                                    <Button variant="outlined" sx={{ mr: 1 }} onClick={() => startEdit(employee)}>Edit</Button>
+                                    <Button variant="contained" color="error" onClick={() => deleteEmployee(employee.employee_id)}>
+                                        Delete
+                                    </Button>
                                 </TableCell>
                             </TableRow>
                         ))}
-                        </TableRow>
                     </TableBody>
                 </Table>
             </section>

@@ -1,5 +1,5 @@
 //NOTE: This file was created with the help of LLMs
-//install dependencies
+import 'dotenv/config';
 import express from 'express';
 import mysql from 'mysql2';
 import cors from 'cors';
@@ -10,11 +10,11 @@ app.use(express.json());
 
 // 1. Database Connection
 const db = mysql.createConnection({
-    host: 'my-db.cr1b9933gaye.us-east-1.rds.amazonaws.com',
-    user: 'admin',
-    password: 'Timdbpw10',
-    database: 'ericdb',
-    port: 3306
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    port: process.env.DB_PORT,
 });
 
 db.connect(err => {
@@ -25,7 +25,7 @@ db.connect(err => {
 // 2. CRUD ROUTES
 // READ: Get all employees
 app.get('/employees', (req, res) => {
-    db.query('SELECT * FROM Employees', (err, results) => {
+    db.query('SELECT * FROM employees', (err, results) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json(results);
     });
@@ -34,7 +34,7 @@ app.get('/employees', (req, res) => {
 // CREATE: Add a new employee
 app.post('/employees', (req, res) => {
     const { first_name, last_name, email, birthdate, salary } = req.body;
-    const sql = 'INSERT INTO Employees (first_name, last_name, email, birthdate, salary) VALUES (?, ?, ?, ?, ?)';
+    const sql = 'INSERT INTO employees (first_name, last_name, email, birthdate, salary) VALUES (?, ?, ?, ?, ?)';
     db.query(sql, [first_name, last_name, email, birthdate, salary], (err, result) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json({ id: result.insertId, ...req.body });
@@ -43,7 +43,7 @@ app.post('/employees', (req, res) => {
 
 // DELETE: Remove an employee
 app.delete('/employees/:id', (req, res) => {
-    db.query('DELETE FROM Employees WHERE id = ?', [req.params.id], (err,) => {
+    db.query('DELETE FROM employees WHERE employee_id = ?', [req.params.id], (err,) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json({ success: true, deletedId: req.params.id });
     });
@@ -52,7 +52,7 @@ app.delete('/employees/:id', (req, res) => {
 // UPDATE: Edit an employee
 app.put('/employees/:id', (req, res) => {
     const { first_name, last_name, email, birthdate, salary } = req.body;
-    const sql = 'UPDATE Employees SET first_name=?, last_name=?, email=?, birthdate=?, salary=? WHERE id=?';
+    const sql = 'UPDATE employees SET first_name=?, last_name=?, email=?, birthdate=?, salary=? WHERE employee_id=?';
     db.query(sql, [first_name, last_name, email, birthdate, salary, req.params.id], (err,) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json({ success: true, id: req.params.id, ...req.body });
